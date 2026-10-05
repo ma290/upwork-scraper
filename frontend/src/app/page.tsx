@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import {
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -42,9 +43,20 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  // Email & Password Auth State
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Keywords State
   const [keywords, setKeywords] = useState<string[]>(["python", "automation", "web3"]);
   const [newKeyword, setNewKeyword] = useState("");
   const [savingKeywords, setSavingKeywords] = useState(false);
+
+  // Jobs State
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
 
@@ -97,7 +109,7 @@ export default function Home() {
         body: JSON.stringify({
           user_id: currentUser.uid,
           email: currentUser.email,
-          name: currentUser.displayName,
+          name: currentUser.email?.split("@")[0] || "User",
           keywords: keywords,
         }),
       });
@@ -106,7 +118,7 @@ export default function Home() {
         setProfile({
           user_id: data.user_id,
           email: currentUser.email || "",
-          name: currentUser.displayName || "",
+          name: currentUser.email?.split("@")[0] || "User",
           telegram_connected: data.telegram_connected,
           telegram_chat_id: data.telegram_chat_id,
           telegram_link: data.telegram_link,
@@ -122,6 +134,40 @@ export default function Home() {
     }
   };
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthLoading(true);
+
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+      } else {
+        await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+      }
+    } catch (err: unknown) {
+      console.error("Auth error:", err);
+      const message = err instanceof Error ? err.message : "Authentication failed";
+      if (message.includes("auth/email-already-in-use")) {
+        setAuthError("This email is already registered. Please log in.");
+      } else if (message.includes("auth/invalid-credential") || message.includes("auth/wrong-password") || message.includes("auth/user-not-found")) {
+        setAuthError("Invalid email or password.");
+      } else if (message.includes("auth/weak-password")) {
+        setAuthError("Password should be at least 6 characters.");
+      } else if (message.includes("auth/invalid-email")) {
+        setAuthError("Please enter a valid email address.");
+      } else {
+        setAuthError(message);
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
   const fetchRecentJobs = async () => {
     setLoadingJobs(true);
     try {
@@ -135,18 +181,6 @@ export default function Home() {
     } finally {
       setLoadingJobs(false);
     }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      console.error("Google sign in error:", err);
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
   };
 
   const addKeyword = () => {
@@ -171,7 +205,7 @@ export default function Home() {
         body: JSON.stringify({
           user_id: user.uid,
           email: user.email,
-          name: user.displayName,
+          name: user.email?.split("@")[0] || "User",
           keywords: keywords,
         }),
       });
@@ -206,7 +240,7 @@ export default function Home() {
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-slate-300 hidden sm:inline">
-                  {user.displayName || user.email}
+                  {user.email}
                 </span>
                 <button
                   onClick={handleLogout}
@@ -215,42 +249,101 @@ export default function Home() {
                   Sign Out
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={handleGoogleLogin}
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20"
-              >
-                <span>Sign in with Google</span>
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
 
-      {/* Hero / Logged-out State */}
+      {/* Logged-out State: Email & Password Form */}
       {!user ? (
-        <section className="max-w-4xl mx-auto px-4 py-24 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs mb-6">
-            <span className="animate-pulse">●</span> Real-time Telegram Notifications
+        <section className="max-w-md mx-auto px-4 py-16">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs mb-4">
+              <span className="animate-pulse">●</span> Real-time Telegram Notifications
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2">
+              Upwork Job Radar
+            </h1>
+            <p className="text-slate-400 text-sm">
+              Sign in or create an account to start receiving instant job alerts.
+            </p>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6">
-            Get High-Paying Upwork Jobs Delivered to Your{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Telegram Instantly
-            </span>
-          </h1>
-          <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10">
-            Be the first to send proposals. Scrapes new jobs 24/7 and alerts your Telegram bot the second a matching client posts.
-          </p>
-          <button
-            onClick={handleGoogleLogin}
-            className="inline-flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-8 py-4 rounded-2xl text-lg transition shadow-xl shadow-emerald-500/30 hover:scale-105 transform"
-          >
-            <span>🚀 Sign in with Google to Start Alerts</span>
-          </button>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            {/* Toggle Tabs */}
+            <div className="flex border-b border-slate-800 mb-6">
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(false); setAuthError(null); }}
+                className={`flex-1 pb-3 text-sm font-semibold transition border-b-2 ${
+                  !isSignUp
+                    ? "border-emerald-400 text-emerald-400"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(true); setAuthError(null); }}
+                className={`flex-1 pb-3 text-sm font-semibold transition border-b-2 ${
+                  isSignUp
+                    ? "border-emerald-400 text-emerald-400"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {authError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full mt-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              >
+                {authLoading ? "Processing..." : isSignUp ? "Create Account" : "Log In"}
+              </button>
+            </form>
+          </div>
         </section>
       ) : (
-        /* Dashboard */
+        /* Dashboard for Logged-In User */
         <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
           {/* Telegram Connection Banner */}
           <div className="bg-gradient-to-br from-slate-900 to-slate-800/80 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">

@@ -60,6 +60,22 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
 
+  // Telegram Bot Username State
+  const [customBotName, setCustomBotName] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("telegram_bot_username");
+    if (saved) setCustomBotName(saved);
+  }, []);
+
+  const botUsername =
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || customBotName.trim().replace("@", "");
+  const effectiveTelegramLink =
+    profile?.telegram_link ||
+    (botUsername && user
+      ? `https://t.me/${botUsername}?start=${user.uid}`
+      : null);
+
   // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -370,18 +386,60 @@ export default function Home() {
               </div>
 
               <div>
-                {profile?.telegram_link ? (
-                  <a
-                    href={profile.telegram_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-6 py-3.5 rounded-xl text-sm transition shadow-lg shadow-cyan-500/20"
-                  >
-                    <span>👉 Click to Open & Start Telegram Bot</span>
-                  </a>
+                {effectiveTelegramLink ? (
+                  <div className="flex flex-col items-start sm:items-end gap-2">
+                    <a
+                      href={effectiveTelegramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-6 py-3.5 rounded-xl text-sm transition shadow-lg shadow-cyan-500/20"
+                    >
+                      <span>👉 Click to Open & Start Telegram Bot</span>
+                    </a>
+                    {customBotName ? (
+                      <button
+                        onClick={() => {
+                          setCustomBotName("");
+                          localStorage.removeItem("telegram_bot_username");
+                        }}
+                        className="text-[11px] text-slate-400 hover:text-slate-200 underline"
+                      >
+                        Change Bot Username
+                      </button>
+                    ) : null}
+                  </div>
                 ) : (
-                  <div className="text-xs text-slate-400">
-                    Set `TELEGRAM_BOT_USERNAME` in backend `.env` to enable 1-click connect link.
+                  <div className="flex flex-col gap-2 max-w-xs">
+                    <label className="text-xs text-slate-400 font-medium">
+                      Enter your Telegram Bot Username:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. MyUpworkAlertBot"
+                        value={customBotName}
+                        onChange={(e) => {
+                          setCustomBotName(e.target.value);
+                          localStorage.setItem("telegram_bot_username", e.target.value);
+                        }}
+                        className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-cyan-400 flex-1"
+                      />
+                      <button
+                        onClick={() => {
+                          if (customBotName.trim() && user) {
+                            const clean = customBotName.trim().replace("@", "");
+                            window.open(`https://t.me/${clean}?start=${user.uid}`, "_blank");
+                          }
+                        }}
+                        disabled={!customBotName.trim()}
+                        className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition disabled:opacity-40"
+                      >
+                        Open 🚀
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-slate-500">
+                      Get your bot username from @BotFather on Telegram.
+                    </span>
                   </div>
                 )}
               </div>

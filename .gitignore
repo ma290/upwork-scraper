@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+!*.example
 *.key
 *.pem
 .venv
@@ -18,8 +19,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/

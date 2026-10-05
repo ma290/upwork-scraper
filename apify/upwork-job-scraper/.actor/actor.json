@@ -1,0 +1,37 @@
+{
+	"actorSpecification": 1,
+	"name": "live-upwork-job-scraper",
+	"title": "Live Upwork Job Scraper - URL Parser",
+	"description": "Simply paste your Upwork search URL and get instant results! Real-time job listings with complete client data, budgets, skills, and competition analysis. Just search on Upwork, copy the URL, and let the scraper do the rest. Perfect for freelancers, agencies, and job market research. Supports all Upwork filters automatically.",
+	"version": "0.2",
+	"buildTag": "latest",
+	"meta": {
+		"templateId": "python-beautifulsoup",
+		"categories": ["BUSINESS", "ECOMMERCE", "JOBS"],
+		"keywords": [
+			"upwork",
+			"job scraper",
+			"freelance jobs",
+			"job listings",
+			"real-time data",
+			"url parser",
+			"job automation",
+			"job market research",
+			"freelancer tools",
+			"upwork automation",
+			"job monitoring",
+			"competitive intelligence",
+			"easy setup",
+			"copy paste"
+		]
+	},
+	"input": "./input_schema.json",
+	"dockerfile": "./Dockerfile",
+	"storages": {
+		"dataset": "./dataset_schema.json"
+	},
+	"environmentVariables": {
+		"API_ENDPOINT": "https://upworkapi.upfindr.app",
+		"API_KEY": "@apiKey"
+	}
+}

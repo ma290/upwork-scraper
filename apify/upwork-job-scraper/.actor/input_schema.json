@@ -1,0 +1,25 @@
+{
+    "title": "Upwork Job Scraper - URL Parser",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "upworkUrl": {
+            "title": "Upwork Search URL (Optional)",
+            "type": "string",
+            "description": "The full Upwork search URL with filters. Leave empty to fetch all jobs without filters. Example: https://www.upwork.com/nx/search/jobs/?q=python&hourly_rate=25-100&payment_verified=1",
+            "editor": "textfield",
+            "example": "https://www.upwork.com/nx/search/jobs/?q=python%20developer&job_type=hourly&contractor_tier=2,3&hourly_rate=50-&payment_verified=1",
+            "default": ""
+        },
+        "maxJobs": {
+            "title": "Maximum Jobs",
+            "type": "integer",
+            "description": "Number of jobs to fetch (1-50)",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20,
+            "editor": "number"
+        }
+    },
+    "required": []
+}

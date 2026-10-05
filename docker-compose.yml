@@ -1,0 +1,29 @@
+services:
+  upwork-job-listing-scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: upwork-job-listing-scraper
+    volumes:
+      # Mount storage directory for persistent data
+      - ./storage:/app/storage
+      # Mount logs directory
+      - ./logs:/app/logs
+      # Optional: mount source code for development (uncomment for dev mode)
+      # - ./src:/app/src
+    restart: "no"
+    # Resource limits
+    mem_limit: 2g
+    memswap_limit: 2g
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Running as root user (no permission issues)
+    environment:
+      # Application configuration
+      - LOCAL_STORAGE_DIR=/app/storage
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+networks:
+  default:
+    name: upwork-job-listing-scraper-network

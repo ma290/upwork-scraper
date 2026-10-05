@@ -60,6 +60,7 @@ export default function Home() {
       setLoading(false);
     });
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch recent jobs
